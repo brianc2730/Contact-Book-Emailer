@@ -9,6 +9,8 @@ import PyQt5.QtCore as qc
 import sys
 import sqlite3
 
+
+
 class MainWindow(qtw.QWidget):
     def __init__(self):
         super().__init__()
@@ -46,14 +48,53 @@ class MainWindow(qtw.QWidget):
         addTab = qtw.QWidget()
         add_layout = qtw.QFormLayout()
         
-        third_label = qtw.QLabel("Add a Contact")
-        third_label.setFont(g.QFont('Comic Sans', 20))
-        third_label.setAlignment(qc.Qt.AlignCenter)
-        add_layout.addWidget(third_label)
+        add_title = qtw.QLabel("Add a Contact")
+        add_title.setFont(g.QFont('Comic Sans', 20))
+        add_title.setAlignment(qc.Qt.AlignCenter)
+        
+        name_label = qtw.QLabel("Name")
+        name = qtw.QLineEdit()
+
+        phone_number_label = qtw.QLabel("Phone Number")
+        phone_number = qtw.QLineEdit()
+
+        email_address_label = qtw.QLabel("Email Address")
+        email_address = qtw.QLineEdit()
+
+        add_button = qtw.QPushButton("Add", clicked = lambda: add_Database())
+
+        add_layout.addRow(add_title)
+        add_layout.addRow(name_label, name)
+        add_layout.addRow(phone_number_label, phone_number)
+        add_layout.addRow(email_address_label, email_address)
+        add_layout.addRow(add_button)
 
         addTab.setLayout(add_layout)
 
+        def add_Database():
+            conn = sqlite3.connect("contact_book.db")
+            c = conn.cursor()
+
+            c.execute("CREATE TABLE if not exists contact_book (id integer PRIMARY KEY, name text NOT NULL, email_address text NOT NULL, phone_number text NOT NULL)")
+
+            add_message_box = qtw.QMessageBox()
+            add_message_box.setIcon(qtw.QMessageBox.Information)
+
+            if name.text() == "" or email_address.text() == "" or phone_number.text() == "":
+                add_message_box.setText("Failed to add to contact book. One of the fields is empty.")
+
+            else:
+                c.execute("INSERT INTO contact_book (name, email_address, phone_number) VALUES (?,?,?)", (str(name.text()), str(email_address.text()), str(phone_number.text())))
+                add_message_box.setText("Successfully Added to Contact Book!")
+
+            conn.commit()
+            conn.close()
+
+            run_message_box = add_message_box.exec_()
+
         return addTab
+
+        
 
 
 application = qtw.QApplication(sys.argv)
