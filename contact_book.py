@@ -28,10 +28,34 @@ class MainWindow(qtw.QWidget):
         
     def contactsTabUI(self):
         contactsTab = qtw.QWidget()
-        contacts_layout = qtw.QVBoxLayout()
-        test_label = qtw.QLabel("First Label")
-        test_label.setFont(g.QFont('Comic Sans', 20))
-        contacts_layout.addWidget(test_label)
+
+        contacts_layout = qtw.QGridLayout()
+
+        contacts_label = qtw.QLabel("My Contacts")
+        contacts_label.setFont(g.QFont('Comic Sans', 20))
+        contacts_layout.addWidget(contacts_label,0,0)
+        
+        conn = sqlite3.connect("contact_book.db")
+        c = conn.cursor()
+
+        all_contacts = c.execute("SELECT * FROM contact_book ORDER BY name")
+        num_row = 1
+        num_col = -1
+        previous_contact = "Z"
+        for row in all_contacts:            
+            if (row[1].lower())[0:1] == previous_contact.lower()[0:1]:
+                num_row += 1
+            else:
+                num_col += 1
+                num_row = 1
+
+            previous_contact = row[1]
+
+            contact_button = qtw.QPushButton(row[1])
+            contact_button.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
+            contacts_layout.addWidget(contact_button, num_row, num_col)
+        
+        
         contactsTab.setLayout(contacts_layout)
         return contactsTab
 
