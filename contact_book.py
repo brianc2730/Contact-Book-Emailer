@@ -172,7 +172,88 @@ class MainWindow(qtw.QWidget):
         return deleteTab
 
     def editTabUI(self):
-        pass
+        editTab = qtw.QWidget()
+        edit_layout = qtw.QFormLayout()
+
+        edit_title = qtw.QLabel("Edit a Contact")
+        edit_title.setFont(g.QFont('Comic Sans', 20))
+        
+        edit_instructions = qtw.QLabel("Type in the name of the contact you want to edit.")
+        edit_instructions.setFont(g.QFont('Comic Sans', 15))
+
+        name_label = qtw.QLabel("Name")
+        name = qtw.QLineEdit()    
+
+        edit_button = qtw.QPushButton("Edit", clicked = lambda: edit_Database())
+
+        phone_number_edit_label = qtw.QLabel("Phone Number")
+        phone_number_edit_label.setHidden(True)
+        phone_number_edit = qtw.QLineEdit("")
+        phone_number_edit.setHidden(True)
+
+        email_address_edit_label = qtw.QLabel("Email Address")
+        email_address_edit_label.setHidden(True)
+        email_address_edit = qtw.QLineEdit("")
+        email_address_edit.setHidden(True)
+
+        edit_confirm_button = qtw.QPushButton("Confirm", clicked = lambda: confirm_edit_database())
+        edit_confirm_button.setHidden(True)
+
+        edit_layout.addRow(edit_title)
+        edit_layout.addRow(edit_instructions)
+        edit_layout.addRow(name_label, name)
+        edit_layout.addRow(edit_button)
+        edit_layout.addRow(phone_number_edit_label, phone_number_edit)
+        edit_layout.addRow(email_address_edit_label, email_address_edit)
+        edit_layout.addRow(edit_confirm_button)
+
+        editTab.setLayout(edit_layout)
+
+        conn = sqlite3.connect("contact_book.db")
+        c = conn.cursor()
+
+        def edit_Database():
+
+            c.execute("CREATE TABLE if not exists contact_book (id integer PRIMARY KEY, name text NOT NULL, email_address text NOT NULL, phone_number text NOT NULL)")
+
+            edit_message_box = qtw.QMessageBox()
+            edit_message_box.setIcon(qtw.QMessageBox.Information)
+
+            c.execute("SELECT * FROM contact_book WHERE name = ?",[name.text()])
+            current_selection = c.fetchone()
+
+            if name.text() == "" or not current_selection:
+                edit_message_box.setText("Failed to find contact from contact book. Name field is empty or doesn't match contacts")
+                run_message_box = edit_message_box.exec_()
+
+            else:
+                phone_number_edit_label.setHidden(False)
+                phone_number_edit.setHidden(False)
+                phone_number_edit.setText(current_selection[3])
+
+                email_address_edit_label.setHidden(False)
+                email_address_edit.setHidden(False)
+                email_address_edit.setText(current_selection[2])
+
+                edit_confirm_button.setHidden(False)
+
+        def confirm_edit_database():
+            edit_message_confirm_box = qtw.QMessageBox()
+            edit_message_confirm_box.setIcon(qtw.QMessageBox.Information)
+
+            if phone_number_edit.text() == "" or email_address_edit.text() == "":
+                edit_message_confirm_box.setText("Please provide the edited credentials")
+
+            else:
+                c.execute("UPDATE contact_book SET phone_number = ?, email_address = ?", [phone_number_edit.text(), email_address_edit.text()])
+                edit_message_confirm_box.setText("Successfully edited Contact Book! Please restart contact book to see the changes.")
+
+                conn.commit()
+                conn.close()
+
+            run_message_confirm_box = edit_message_confirm_box.exec_()
+
+        return editTab
 
 
 application = qtw.QApplication(sys.argv)
