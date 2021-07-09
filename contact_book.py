@@ -8,7 +8,8 @@ import PyQt5.QtGui as g
 import PyQt5.QtCore as qc
 import sys
 import sqlite3
-
+from emailer import emailer
+from validate_email import validate_email
 
 
 class MainWindow(qtw.QWidget):
@@ -66,11 +67,65 @@ class MainWindow(qtw.QWidget):
 
     def emailerTabUI(self):
         emailerTab = qtw.QWidget()
-        emailer_layout = qtw.QVBoxLayout()
-        second_label = qtw.QLabel("Second Label")
-        second_label.setFont(g.QFont('Comic Sans', 20))
-        emailer_layout.addWidget(second_label)
+        emailer_layout = qtw.QFormLayout()
+
+        email_title = qtw.QLabel("Emailer")
+        email_title.setFont(g.QFont('Comic Sans', 20))
+
+        email_instructions = qtw.QLabel("Type the name of someone from your contact book or type in an email directly in the email recipient box")
+        email_instructions.setFont(g.QFont('Comic Sans', 15))
+
+        # sender_label = qtw.QLabel("Email Sender")
+        # sender = qtw.QLineEdit()
+
+        receiver_label = qtw.QLabel("Email Recipient")
+        receiver = qtw.QLineEdit()
+
+        subject_label = qtw.QLabel("Subject")
+        subject = qtw.QLineEdit()
+
+        message = qtw.QTextEdit(lineWrapMode = qtw.QTextEdit.FixedColumnWidth, lineWrapColumnOrWidth = 100, placeholderText = "Message")
+
+        email_button = qtw.QPushButton("Send Email!", clicked = lambda: email_send())
+
+        emailer_layout.addRow(email_title)
+        emailer_layout.addRow(email_instructions)
+        # emailer_layout.addRow(sender_label, sender)
+        emailer_layout.addRow(receiver_label, receiver)
+        emailer_layout.addRow(subject_label, subject)
+        emailer_layout.addRow(message)
+        emailer_layout.addRow(email_button)
+
         emailerTab.setLayout(emailer_layout)
+
+        def email_send():
+            
+            conn = sqlite3.connect("contact_book.db")
+            c = conn.cursor()
+
+            c.execute("SELECT email_address FROM contact_book WHERE name=?", [receiver.text()])
+            email_info = c.fetchone()
+
+            email_message_box = qtw.QMessageBox()
+            email_message_box.setIcon(qtw.QMessageBox.Information)
+
+            if email_info is not None:        
+                emailer(email_info[0], subject.text(), message.toPlainText())
+                email_message_box.setText("Email Sent!")
+
+            else:
+                check_email = validate_email(email_address=receiver.text(), check_format=True, check_blacklist=True, check_smtp=False, check_dns=True)
+
+                if not check_email:
+                    email_message_box.setText("Email Address is not valid!")
+
+                else:
+                    emailer(receiver.text(), subject.text(), message.toPlainText())
+                    email_message_box.setText("Email Sent!")
+
+            run_email_message_box = email_message_box.exec_()
+
+
         return emailerTab
     
     def addTabUI(self):
@@ -108,8 +163,13 @@ class MainWindow(qtw.QWidget):
             add_message_box = qtw.QMessageBox()
             add_message_box.setIcon(qtw.QMessageBox.Information)
 
+            check_email = validate_email(email_address=email_address.text(), check_format=True, check_blacklist=True, check_smtp=False, check_dns=True)
+
             if name.text() == "" or email_address.text() == "" or phone_number.text() == "":
                 add_message_box.setText("Failed to add to contact book. One of the fields is empty.")
+
+            elif not check_email:
+                add_message_box.setText("Email Address is not valid!")
 
             else:
                 c.execute("INSERT INTO contact_book (name, email_address, phone_number) VALUES (?,?,?)", (str(name.text()), str(email_address.text()), str(phone_number.text())))
@@ -119,7 +179,6 @@ class MainWindow(qtw.QWidget):
             conn.close()
 
             run_message_box = add_message_box.exec_()
-            sys.exit()
             
         return addTab
 
